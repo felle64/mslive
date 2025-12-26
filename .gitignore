@@ -1,0 +1,18 @@
+# Python venvs
+.venv/
+venv/
+env/
+
+# Python caches
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Local logs / recordings
+*.mslr
+
+# OS / editor noise
+.DS_Store
+.vscode/
+.idea/

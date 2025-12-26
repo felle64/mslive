@@ -1,0 +1,6 @@
+Metadata-Version: 2.4
+Name: mslive
+Version: 0.1.0
+Summary: MS42 live logger core (transport/record/replay/polling scaffold)
+Requires-Python: >=3.10
+Requires-Dist: pyserial>=3.5

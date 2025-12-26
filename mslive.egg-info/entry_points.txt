@@ -1,0 +1,2 @@
+[console_scripts]
+mslive = mslive.cli:main

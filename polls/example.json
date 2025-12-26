@@ -1,0 +1,9 @@
+{
+  "polls": [
+    {
+      "name": "tester_present_placeholder",
+      "hex": "3E 00",
+      "interval_ms": 1000
+    }
+  ]
+}
