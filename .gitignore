@@ -2,12 +2,18 @@
 .venv/
 venv/
 env/
+.env/
 
 # Python caches
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
+.pytest_cache/
+.mypy_cache/
+
+# Logs
+*.log
 
 # Local logs / recordings
 *.mslr
