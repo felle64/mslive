@@ -14,4 +14,4 @@ mslive = "mslive.cli:main"
 
 [tool.setuptools]
 # Only package the Python code, ignore top-level folders like polls/
-packages = ["mslive", "mslive.core"]
+packages = { find = { include = ["mslive*"], exclude = ["polls*"] } }
