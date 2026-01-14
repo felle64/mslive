@@ -7,8 +7,8 @@ import time
 import tkinter as tk
 from tkinter import ttk
 
-from mslive.core.ds2 import DS2, DS2Config
 from mslive.decoders.ms42_general import decode_general
+from mslive.util.cli import add_common_args, add_port_or_replay, open_ds2_or_exit, resolve_log_path_from_args
 
 REQ_GENERAL = bytes.fromhex("12 05 0B 03")
 
@@ -35,26 +35,17 @@ class EMA:
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--port", default=None, help="COM1 / COM3 / etc (required unless --replay is used)")
-    ap.add_argument("--baud", type=int, default=9600)
-    ap.add_argument("--hz", type=float, default=10.0)
+    add_port_or_replay(ap)
+    add_common_args(ap, default_baud=9600, default_hz=10.0)
 
     # smoothing knobs (default: NO rpm smoothing)
     ap.add_argument("--rpm-alpha", type=float, default=1.0, help="1.0=no smoothing, 0.2=heavy smoothing")
     ap.add_argument("--temp-alpha", type=float, default=0.25, help="smoothing for temps (0..1)")
 
-    ap.add_argument("--log", default=None, help="optional csv path")
-    ap.add_argument("--debug", action="store_true")
-    ap.add_argument("--replay", default=None, help="Path to CSV log with b0..b31 to simulate MS42")
+    ap.add_argument("--log", default=None, help="output csv path (default: logs/ms42_dash_YYYYmmdd_HHMMSS.csv)")
     ap.add_argument("--replay-speed", type=float, default=1.0)
 
     args = ap.parse_args()
-    
-    if not args.replay and not args.port:
-        ap.error("Either --port (real ECU) or --replay (CSV) must be provided.")
-    if args.replay and args.port:
-        ap.error("Use only one of --port or --replay (not both).")
-
 
     if args.replay:
         from mslive.core.replay import ReplayDS2, ReplayConfig
@@ -68,24 +59,17 @@ def main():
         )
         d.open()
     else:
-        d = DS2(DS2Config(port=args.port, baud=args.baud, debug=args.debug))
-        d.open()
+        d = open_ds2_or_exit(port=args.port, baud=args.baud, debug=args.debug)
         d.initialized = True
 
-
-
-
-    # Optional log
-    log_f = None
-    log_w = None
-    if args.log:
-        log_f = open(args.log, "w", newline="", encoding="utf-8")
-        log_w = csv.writer(log_f)
-        log_w.writerow(
-            ["ts", "rpm", "coolant_c", "oil_c", "iat_c", "maf_kgph", "vbatt_v", "load_pct", "thr_raw", "thr2_raw"]
-            + [f"b{i}" for i in range(32)]
-        )
-        log_f.flush()
+    log_path = resolve_log_path_from_args(args, "log", "dash")
+    log_f = open(log_path, "w", newline="", encoding="utf-8")
+    log_w = csv.writer(log_f)
+    log_w.writerow(
+        ["ts", "rpm", "coolant_c", "oil_c", "iat_c", "maf_kgph", "vbatt_v", "load_pct", "thr_raw", "thr2_raw"]
+        + [f"b{i}" for i in range(32)]
+    )
+    log_f.flush()
 
     root = tk.Tk()
     root.title("MS42 Live")
