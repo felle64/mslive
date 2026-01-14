@@ -22,12 +22,12 @@ def decode_general(resp: bytes) -> Ms42General:
     """
     resp is the full DS2 response bytes (b0..).
     Mapping derived from your CSV behaviour:
-      rpm       = u16be(15)
+      rpm = u16be(resp, 3)
       coolant   = b11 (0.75x - 48)
       oil       = b12 (0.79607843x - 48)
       iat       = b22 (0.75x - 48)
     """
-    rpm = u16be(resp, 15)
+    rpm = u16be(resp, 3)
     coolant = temp_075(resp[11])
     oil = temp_oil(resp[12])
     iat = temp_075(resp[22])

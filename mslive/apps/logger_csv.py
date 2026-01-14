@@ -69,7 +69,8 @@ def main():
 
                 resp = d.send(REQ_GENERAL)
 
-                rpm = u16be(resp, 15)
+                rpm = u16be(resp, 3)
+
 
                 # CHANGED: this behaves like airflow, not road speed
                 maf_kgph = u16be(resp, 8) / 10.0
