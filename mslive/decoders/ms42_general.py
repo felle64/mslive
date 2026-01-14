@@ -17,6 +17,11 @@ class Ms42General:
     coolant_c: float
     oil_c: float
     iat_c: float
+    thr1_raw: int
+    thr2_raw: int
+    load_raw: int
+    maf_word: int  
+
 
 def decode_general(resp: bytes) -> Ms42General:
     """
@@ -31,5 +36,18 @@ def decode_general(resp: bytes) -> Ms42General:
     coolant = temp_075(resp[11])
     oil = temp_oil(resp[12])
     iat = temp_075(resp[22])
+    thr1 = resp[6]
+    thr2 = resp[7]
+    load_raw = resp[19]
+    maf_word = u16be(resp, 8)
 
-    return Ms42General(rpm=rpm, coolant_c=coolant, oil_c=oil, iat_c=iat)
+    return Ms42General(
+        rpm=rpm,
+        coolant_c=coolant,
+        oil_c=oil,
+        iat_c=iat,
+        thr1_raw=thr1,
+        thr2_raw=thr2,
+        load_raw=load_raw,
+        maf_word=maf_word,
+    )

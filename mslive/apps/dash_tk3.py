@@ -35,7 +35,7 @@ class EMA:
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--port", required=True, help="COM1 / COM3 / etc")
+    ap.add_argument("--port", default=None, help="COM1 / COM3 / etc (required unless --replay is used)")
     ap.add_argument("--baud", type=int, default=9600)
     ap.add_argument("--hz", type=float, default=10.0)
 
@@ -45,11 +45,35 @@ def main():
 
     ap.add_argument("--log", default=None, help="optional csv path")
     ap.add_argument("--debug", action="store_true")
-    args = ap.parse_args()
+    ap.add_argument("--replay", default=None, help="Path to CSV log with b0..b31 to simulate MS42")
+    ap.add_argument("--replay-speed", type=float, default=1.0)
 
-    d = DS2(DS2Config(port=args.port, baud=args.baud, debug=args.debug))
-    d.open()
-    d.initialized = True  # match your proven working path
+    args = ap.parse_args()
+    
+    if not args.replay and not args.port:
+        ap.error("Either --port (real ECU) or --replay (CSV) must be provided.")
+    if args.replay and args.port:
+        ap.error("Use only one of --port or --replay (not both).")
+
+
+    if args.replay:
+        from mslive.core.replay import ReplayDS2, ReplayConfig
+        d = ReplayDS2(
+            ReplayConfig(
+                csv_path=args.replay,
+                realtime=True,
+                loop=True,
+                speed=args.replay_speed,
+            )
+        )
+        d.open()
+    else:
+        d = DS2(DS2Config(port=args.port, baud=args.baud, debug=args.debug))
+        d.open()
+        d.initialized = True
+
+
+
 
     # Optional log
     log_f = None
