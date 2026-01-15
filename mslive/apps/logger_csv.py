@@ -3,7 +3,7 @@ import argparse
 import csv
 import time
 
-from mslive.core.ds2 import DS2, DS2Config
+from mslive.util.cli import add_common_args, add_port_or_replay, open_ds2_or_exit, resolve_log_path_from_args
 
 REQ_GENERAL = bytes.fromhex("12 05 0B 03")  # checksum appended internally by DS2.send()
 
@@ -22,19 +22,28 @@ def temp_oil(raw: int) -> float:
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--port", required=True, help="COM port (e.g. COM1, COM3)")
-    ap.add_argument("--baud", type=int, default=9600)
-    ap.add_argument("--hz", type=float, default=5.0, help="sample rate")
-    ap.add_argument("--out", default=None, help="output csv path")
+    add_port_or_replay(ap)
+    add_common_args(ap, default_baud=9600, default_hz=5.0)
+    ap.add_argument("--out", default=None, help="output csv path (default: logs/ms42_log_YYYYmmdd_HHMMSS.csv)")
     ap.add_argument("--seconds", type=float, default=0, help="0 = run until Ctrl+C")
-    ap.add_argument("--debug", action="store_true")
     args = ap.parse_args()
 
-    out = args.out or time.strftime("ms42_%Y%m%d_%H%M%S.csv")
+    out = resolve_log_path_from_args(args, "out", "log")
 
-    d = DS2(DS2Config(port=args.port, baud=args.baud, debug=args.debug))
-    d.open()
-    d.initialized = True  # proven-good path
+    if args.replay:
+        from mslive.core.replay import ReplayConfig, ReplayDS2
+        d = ReplayDS2(
+            ReplayConfig(
+                csv_path=args.replay,
+                realtime=True,
+                loop=True,
+                speed=1.0,
+            )
+        )
+        d.open()
+    else:
+        d = open_ds2_or_exit(port=args.port, baud=args.baud, debug=args.debug)
+        d.initialized = True  # proven-good path
 
     period = 1.0 / max(args.hz, 0.1)
     t0 = time.time()
