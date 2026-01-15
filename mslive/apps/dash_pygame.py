@@ -73,7 +73,7 @@ def main():
 
     pygame.init()
     pygame.display.set_caption("MS42 Live")
-    screen = pygame.display.set_mode((1024, 600))
+    screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
     clock = pygame.time.Clock()
 
     font_label = pygame.font.SysFont("DejaVu Sans", 26, bold=True)
