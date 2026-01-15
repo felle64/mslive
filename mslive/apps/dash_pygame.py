@@ -62,14 +62,17 @@ def main():
         d = open_ds2_or_exit(port=args.port, baud=args.baud, debug=args.debug)
         d.initialized = True
 
-    log_path = resolve_log_path_from_args(args, "log", "dash")
-    log_f = open(log_path, "w", newline="", encoding="utf-8")
-    log_w = csv.writer(log_f)
-    log_w.writerow(
-        ["ts", "rpm", "coolant_c", "oil_c", "iat_c", "maf_kgph", "vbatt_v", "load_pct", "thr_raw", "thr2_raw"]
-        + [f"b{i}" for i in range(32)]
-    )
-    log_f.flush()
+    log_f = None
+    log_w = None
+    if not args.replay or args.log is not None:
+        log_path = resolve_log_path_from_args(args, "log", "dash")
+        log_f = open(log_path, "w", newline="", encoding="utf-8")
+        log_w = csv.writer(log_f)
+        log_w.writerow(
+            ["ts", "rpm", "coolant_c", "oil_c", "iat_c", "maf_kgph", "vbatt_v", "load_pct", "thr_raw", "thr2_raw"]
+            + [f"b{i}" for i in range(32)]
+        )
+        log_f.flush()
 
     pygame.init()
     pygame.display.set_caption("MS42 Live")
