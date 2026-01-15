@@ -226,3 +226,6 @@ def main():
     finally:
         d.close()
         pygame.quit()
+
+if __name__ == "__main__":
+    main()
