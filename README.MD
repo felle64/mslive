@@ -54,5 +54,6 @@ mslive replay --file session.mslr
 python -m mslive.apps.dash_pygame --replay logs/ms42_20260114_132209.csv --hz 10
 python -m mslive.apps.logger_csv --replay logs/ms42_20260114_132209.csv --hz 10 --seconds 120
 python -m mslive.apps.dash_pygame --port COM1 --baud 9600 --hz 10
+python -m mslive.apps.dash_pygame --port /dev/ttyUSB0 --baud 9600 --hz 10
 ```
 Logs are written to `./logs/` by default. Relative paths passed to `--log` or `--out` are placed under `./logs/`.
