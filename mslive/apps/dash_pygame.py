@@ -333,8 +333,8 @@ def main():
             if oil_bg != COL_TILE_BG:
                 oil_col = COL_BG
 
-            draw_tile("Coolant °C", vars_["cool"], x1, y1, tile_w, tile_h, cool_col, cool_bg)
-            draw_tile("Oil °C",     vars_["oil"],  x2, y1, tile_w, tile_h, oil_col, oil_bg)
+            draw_tile("Oil °C",     vars_["oil"],  x1, y1, tile_w, tile_h, oil_col, oil_bg)
+            draw_tile("Coolant °C", vars_["cool"], x2, y1, tile_w, tile_h, cool_col, cool_bg)
             draw_tile("Battery V",  vars_["vbatt"], x1, y2, tile_w, tile_h, COL_TEXT)
             draw_tile("IAT °C",     vars_["iat"],  x2, y2, tile_w, tile_h, COL_TEXT)
 
@@ -348,10 +348,10 @@ def main():
             )
 
             banner_y = screen_h - 40
-            if live["cool"] is not None and live["cool"] >= COOL_RED:
-                draw_text("COOLANT HOT", font_label, COL_RED, 24, banner_y)
             if live["oil"] is not None and live["oil"] >= OIL_RED:
-                draw_text("OIL HOT", font_label, COL_RED, 240, banner_y)
+                draw_text("OIL HOT", font_label, COL_RED, 24, banner_y)
+            if live["cool"] is not None and live["cool"] >= COOL_RED:
+                draw_text("COOLANT HOT", font_label, COL_RED, screen_w // 2 + 24, banner_y)
 
         elif page == 2:
             left_x = 36
