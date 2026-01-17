@@ -108,9 +108,9 @@ def main():
     screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
     clock = pygame.time.Clock()
 
-    font_label = pygame.font.SysFont("DejaVu Sans", 26, bold=True)
-    font_value = pygame.font.SysFont("DejaVu Sans Mono", 36)
-    font_status = pygame.font.SysFont("DejaVu Sans", 20)
+    font_label = pygame.font.SysFont("DejaVu Sans", 28, bold=True)
+    font_value = pygame.font.SysFont("DejaVu Sans Mono", 40)
+    font_status = pygame.font.SysFont("DejaVu Sans", 22)
 
     page = 1  # 1..3
 
@@ -251,11 +251,14 @@ def main():
 
     def draw_tile(title: str, value: str, x: int, y: int, w: int, h: int,
                   value_color: tuple[int, int, int] = COL_TEXT,
-                  bg_color: tuple[int, int, int] = COL_TILE_BG):
+                  bg_color: tuple[int, int, int] = COL_TILE_BG,
+                  overlay_text: str | None = None):
         pygame.draw.rect(screen, bg_color, (x, y, w, h), border_radius=16)
         pygame.draw.rect(screen, COL_TILE_BORDER, (x, y, w, h), width=2, border_radius=16)
         draw_text(title, font_label, COL_DIM, x + 18, y + 14)
         draw_text(value, font_value, value_color, x + w - 18, y + 56, align_right=True)
+        if overlay_text:
+            draw_text_center(overlay_text, font_value, COL_BG, x + w // 2, y + h // 2)
 
     def nav_button_rects() -> tuple[pygame.Rect, pygame.Rect]:
         w = screen.get_width()
@@ -328,13 +331,36 @@ def main():
                 cool_bg = temp_bg_color(live["cool"], COOL_YELLOW, COOL_RED)
             if live["oil"] is not None:
                 oil_bg = temp_bg_color(live["oil"], OIL_YELLOW, OIL_RED)
+            hot_cool = live["cool"] is not None and live["cool"] >= COOL_RED
+            hot_oil = live["oil"] is not None and live["oil"] >= OIL_RED
             if cool_bg != COL_TILE_BG:
                 cool_col = COL_BG
             if oil_bg != COL_TILE_BG:
                 oil_col = COL_BG
+            flash_hot = int(time.time() * 4) % 2 == 0
 
-            draw_tile("Oil °C",     vars_["oil"],  x1, y1, tile_w, tile_h, oil_col, oil_bg)
-            draw_tile("Coolant °C", vars_["cool"], x2, y1, tile_w, tile_h, cool_col, cool_bg)
+            draw_tile(
+                "Oil °C",
+                vars_["oil"],
+                x1,
+                y1,
+                tile_w,
+                tile_h,
+                oil_col,
+                oil_bg,
+                "HOT" if hot_oil and flash_hot else None,
+            )
+            draw_tile(
+                "Coolant °C",
+                vars_["cool"],
+                x2,
+                y1,
+                tile_w,
+                tile_h,
+                cool_col,
+                cool_bg,
+                "HOT" if hot_cool and flash_hot else None,
+            )
             draw_tile("Battery V",  vars_["vbatt"], x1, y2, tile_w, tile_h, COL_TEXT)
             draw_tile("IAT °C",     vars_["iat"],  x2, y2, tile_w, tile_h, COL_TEXT)
 
@@ -347,11 +373,7 @@ def main():
                 footer_y,
             )
 
-            banner_y = screen_h - 40
-            if live["oil"] is not None and live["oil"] >= OIL_RED:
-                draw_text("OIL HOT", font_label, COL_RED, 24, banner_y)
-            if live["cool"] is not None and live["cool"] >= COOL_RED:
-                draw_text("COOLANT HOT", font_label, COL_RED, screen_w // 2 + 24, banner_y)
+            # Hot indicators are now in-tile overlays.
 
         elif page == 2:
             left_x = 36
