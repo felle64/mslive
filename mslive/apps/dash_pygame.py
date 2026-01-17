@@ -354,15 +354,19 @@ def main():
         elif page == 2:
             left_x = 36
             right_x = screen.get_width() - 34
-            y = 60
-            row_gap = 58
+            screen_h = screen.get_height()
+            top_bar_h = 52
+            footer_block = 96
+            y = top_bar_h + 8
+            rows_area = max(100, screen_h - top_bar_h - footer_block)
+            row_gap = rows_area / max(len(rows), 1)
 
             for label, key in rows:
                 draw_text(label, font_label, (230, 230, 230), left_x, y)
                 draw_text(vars_[key], font_value, (245, 245, 245), right_x, y - 8, align_right=True)
                 y += row_gap
 
-            y += 8
+            y = top_bar_h + rows_area + 12
             draw_text(vars_["timeouts"], font_status, (200, 200, 200), left_x, y)
             y += 26
             draw_text(vars_["status"], font_status, (200, 200, 200), left_x, y)
