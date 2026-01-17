@@ -7,7 +7,7 @@ name = "mslive"
 version = "0.1.0"
 description = "MS42 live logger core (transport/record/replay/polling scaffold)"
 requires-python = ">=3.10"
-dependencies = ["pyserial>=3.5"]
+dependencies = ["pygame>=2.5.0", "pyserial>=3.5"]
 
 [project.scripts]
 mslive = "mslive.cli:main"

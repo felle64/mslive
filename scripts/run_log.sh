@@ -25,9 +25,11 @@ if [ "$1" = "--replay" ]; then
   fi
   file="$2"
   shift 2
+  mkdir -p logs
   exec python -m mslive.apps.logger_csv --replay "$file" "$@"
 else
   port="$1"
   shift
+  mkdir -p logs
   exec python -m mslive.apps.logger_csv --port "$port" "$@"
 fi

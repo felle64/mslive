@@ -19,6 +19,7 @@ if ($args[0] -eq "--replay") {
   if ($args.Count -gt 2) {
     $rest = $args[2..($args.Count - 1)]
   }
+  New-Item -ItemType Directory -Force -Path "logs" | Out-Null
   & python -m mslive.apps.dash_pygame --replay $file @rest
   exit $LASTEXITCODE
 }
@@ -28,5 +29,6 @@ $rest = @()
 if ($args.Count -gt 1) {
   $rest = $args[1..($args.Count - 1)]
 }
+New-Item -ItemType Directory -Force -Path "logs" | Out-Null
 & python -m mslive.apps.dash_pygame --port $port @rest
 exit $LASTEXITCODE

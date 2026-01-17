@@ -25,9 +25,11 @@ if [ "$1" = "--replay" ]; then
   fi
   file="$2"
   shift 2
-  exec python -m mslive.apps.dash_tk3 --replay "$file" "$@"
+  mkdir -p logs
+  exec python -m mslive.apps.dash_pygame --replay "$file" "$@"
 else
   port="$1"
   shift
-  exec python -m mslive.apps.dash_tk3 --port "$port" "$@"
+  mkdir -p logs
+  exec python -m mslive.apps.dash_pygame --port "$port" "$@"
 fi

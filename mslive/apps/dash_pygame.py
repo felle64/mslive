@@ -70,7 +70,9 @@ def main():
     ap.add_argument("--temp-alpha", type=float, default=0.25, help="smoothing for temps (0..1)")
 
     ap.add_argument("--log", default=None, help="output csv path (default: logs/ms42_dash_YYYYmmdd_HHMMSS.csv)")
+    ap.add_argument("--no-log", action="store_true", help="disable CSV logging")
     ap.add_argument("--replay-speed", type=float, default=1.0)
+    ap.add_argument("--loop", action=argparse.BooleanOptionalAction, default=True, help="loop replay when used")
 
     args = ap.parse_args()
 
@@ -80,7 +82,7 @@ def main():
             ReplayConfig(
                 csv_path=args.replay,
                 realtime=True,
-                loop=True,
+                loop=args.loop,
                 speed=args.replay_speed,
             )
         )
@@ -91,7 +93,7 @@ def main():
 
     log_f = None
     log_w = None
-    if not args.replay or args.log is not None:
+    if not args.no_log and (not args.replay or args.log is not None):
         log_path = resolve_log_path_from_args(args, "log", "dash")
         log_f = open(log_path, "w", newline="", encoding="utf-8")
         log_w = csv.writer(log_f)
