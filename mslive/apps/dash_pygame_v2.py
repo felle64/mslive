@@ -256,10 +256,11 @@ def main():
                   bg_color: tuple[int, int, int] = COL_TILE_BG,
                   overlay_text: str | None = None,
                   overlay_color: tuple[int, int, int] | None = None,
-                  value_align_right: bool = True):
+                  value_align_right: bool = True,
+                  title_color: tuple[int, int, int] = COL_DIM):
         pygame.draw.rect(screen, bg_color, (x, y, w, h), border_radius=16)
         pygame.draw.rect(screen, COL_TILE_BORDER, (x, y, w, h), width=2, border_radius=16)
-        draw_text(title, font_label, COL_DIM, x + 18, y + 14)
+        draw_text(title, font_label, title_color, x + 18, y + 14)
         if value_align_right:
             draw_text(value, font_value, value_color, x + w - 18, y + 56, align_right=True)
         else:
@@ -370,6 +371,7 @@ def main():
                 "HOT" if hot_cool and flash_hot else None,
                 COL_BG,
                 value_align_right=False,
+                title_color=COL_BG if cool_bg != COL_TILE_BG else COL_DIM,
             )
             y += temp_h + gap
             draw_tile(
@@ -384,6 +386,7 @@ def main():
                 "HOT" if hot_oil and flash_hot else None,
                 COL_BG,
                 value_align_right=False,
+                title_color=COL_BG if oil_bg != COL_TILE_BG else COL_DIM,
             )
 
             y_right = top_bar_h + pad + 10
