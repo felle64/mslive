@@ -12,9 +12,27 @@ from mslive.util.cli import add_common_args, add_port_or_replay, open_ds2_or_exi
 
 REQ_GENERAL = bytes.fromhex("12 05 0B 03")
 
+COOL_YELLOW = 100.0
+COOL_RED = 105.0
+OIL_YELLOW = 120.0
+OIL_RED = 130.0
+
+COL_BG = (18, 18, 20)
+COL_TEXT = (245, 245, 245)
+COL_DIM = (170, 170, 170)
+COL_YELLOW = (255, 210, 70)
+COL_RED = (255, 80, 80)
+
 
 def u16be(resp: bytes, i: int) -> int:
     return (resp[i] << 8) | resp[i + 1]
+
+def temp_color(value_c: float, yellow: float, red: float) -> tuple[int, int, int]:
+    if value_c >= red:
+        return COL_RED
+    if value_c >= yellow:
+        return COL_YELLOW
+    return COL_TEXT
 
 
 class EMA:
@@ -69,7 +87,7 @@ def main():
         log_f = open(log_path, "w", newline="", encoding="utf-8")
         log_w = csv.writer(log_f)
         log_w.writerow(
-            ["ts", "rpm", "coolant_c", "oil_c", "iat_c", "maf_kgph", "vbatt_v", "load_pct", "thr_raw", "thr2_raw"]
+            ["ts", "rpm", "coolant_c", "oil_c", "iat_c", "ign_deg_kw", "maf_kgph", "vbatt_v", "load_pct", "thr_raw", "thr2_raw"]
             + [f"b{i}" for i in range(32)]
         )
         log_f.flush()
@@ -83,11 +101,14 @@ def main():
     font_value = pygame.font.SysFont("DejaVu Sans Mono", 36)
     font_status = pygame.font.SysFont("DejaVu Sans", 20)
 
+    page = 1  # 1..3
+
     vars_ = {
         "rpm": "—",
         "cool": "—",
         "oil": "—",
         "iat": "—",
+        "ign": "—",
         "maf": "—",
         "vbatt": "—",
         "load": "—",
@@ -98,11 +119,22 @@ def main():
         "lasterr": "",
     }
 
+    live = {
+        "cool": None,
+        "oil": None,
+        "iat": None,
+        "vbatt": None,
+        "rpm": None,
+        "ign": None,
+        "resp": None,
+    }
+
     rows = [
         ("RPM", "rpm"),
         ("Coolant °C", "cool"),
         ("Oil °C", "oil"),
         ("IAT °C", "iat"),
+        ("Ign °KW", "ign"),
         ("MAF kg/h", "maf"),
         ("Battery V", "vbatt"),
         ("Load % (approx)", "load"),
@@ -144,24 +176,34 @@ def main():
             cool = ema_cool.update(g.coolant_c)
             oil = ema_oil.update(g.oil_c)
             iat = ema_iat.update(g.iat_c)
+            ign = g.ign_deg_kw
 
             # update UI
             vars_["rpm"] = f"{rpm:d}"
             vars_["cool"] = f"{cool:0.1f}"
             vars_["oil"] = f"{oil:0.1f}"
             vars_["iat"] = f"{iat:0.1f}"
+            vars_["ign"] = f"{ign:0.1f}"
             vars_["maf"] = f"{maf_kgph:0.1f}"
             vars_["vbatt"] = f"{vbatt_v:0.1f}"
             vars_["load"] = f"{load_pct:0.1f}"
             vars_["thr"] = f"{thr_raw:d}"
             vars_["thr2"] = f"{thr2_raw:d}"
 
+            live["rpm"] = rpm
+            live["cool"] = cool
+            live["oil"] = oil
+            live["iat"] = iat
+            live["vbatt"] = vbatt_v
+            live["ign"] = ign
+            live["resp"] = resp
+
             vars_["status"] = "OK"
             vars_["lasterr"] = ""
 
             if log_w:
                 log_w.writerow(
-                    [time.time(), g.rpm, g.coolant_c, g.oil_c, g.iat_c, maf_kgph, vbatt_v, load_pct, thr_raw, thr2_raw]
+                    [time.time(), g.rpm, g.coolant_c, g.oil_c, g.iat_c, g.ign_deg_kw, maf_kgph, vbatt_v, load_pct, thr_raw, thr2_raw]
                     + list(resp[:32])
                 )
                 log_f.flush()
@@ -190,35 +232,106 @@ def main():
             rect.topleft = (x, y)
         screen.blit(surf, rect)
 
+    def draw_tile(title: str, value: str, x: int, y: int, w: int, h: int,
+                  value_color: tuple[int, int, int] = COL_TEXT):
+        pygame.draw.rect(screen, (26, 26, 30), (x, y, w, h), border_radius=16)
+        pygame.draw.rect(screen, (40, 40, 46), (x, y, w, h), width=2, border_radius=16)
+        draw_text(title, font_label, COL_DIM, x + 18, y + 14)
+        draw_text(value, font_value, value_color, x + w - 18, y + 56, align_right=True)
+
     running = True
     while running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
+            if event.type == pygame.KEYDOWN:
+                if event.key in (pygame.K_ESCAPE, pygame.K_q):
+                    running = False
+                elif event.key in (pygame.K_1,):
+                    page = 1
+                elif event.key in (pygame.K_2,):
+                    page = 2
+                elif event.key in (pygame.K_3,):
+                    page = 3
+                elif event.key in (pygame.K_SPACE, pygame.K_TAB):
+                    page = 1 if page == 3 else page + 1
 
         now = time.time()
         if now >= next_t:
             tick()
 
-        screen.fill((18, 18, 20))
+        screen.fill(COL_BG)
 
-        left_x = 36
-        right_x = 990
-        y = 26
-        row_gap = 58
+        if page == 1:
+            pad = 24
+            tile_w = (1024 - pad * 3) // 2
+            tile_h = 200
+            x1 = pad
+            x2 = pad * 2 + tile_w
+            y1 = pad
+            y2 = pad * 2 + tile_h
 
-        for label, key in rows:
-            draw_text(label, font_label, (230, 230, 230), left_x, y)
-            draw_text(vars_[key], font_value, (245, 245, 245), right_x, y - 8, align_right=True)
-            y += row_gap
+            cool_col = COL_TEXT
+            oil_col = COL_TEXT
+            if live["cool"] is not None:
+                cool_col = temp_color(live["cool"], COOL_YELLOW, COOL_RED)
+            if live["oil"] is not None:
+                oil_col = temp_color(live["oil"], OIL_YELLOW, OIL_RED)
 
-        y += 8
-        draw_text(vars_["timeouts"], font_status, (200, 200, 200), left_x, y)
-        y += 26
-        draw_text(vars_["status"], font_status, (200, 200, 200), left_x, y)
-        y += 26
-        if vars_["lasterr"]:
-            draw_text(vars_["lasterr"], font_status, (140, 140, 140), left_x, y)
+            draw_tile("Coolant °C", vars_["cool"], x1, y1, tile_w, tile_h, cool_col)
+            draw_tile("Oil °C",     vars_["oil"],  x2, y1, tile_w, tile_h, oil_col)
+            draw_tile("Battery V",  vars_["vbatt"], x1, y2, tile_w, tile_h, COL_TEXT)
+            draw_tile("IAT °C",     vars_["iat"],  x2, y2, tile_w, tile_h, COL_TEXT)
+
+            footer_y = 24 + tile_h * 2 + pad * 2
+            draw_text(
+                f"RPM {vars_['rpm']}   Ign {vars_['ign']}°   {vars_['timeouts']}   {vars_['status']}",
+                font_status,
+                COL_DIM,
+                24,
+                footer_y,
+            )
+
+            if live["cool"] is not None and live["cool"] >= COOL_RED:
+                draw_text("COOLANT HOT", font_label, COL_RED, 24, 560)
+            if live["oil"] is not None and live["oil"] >= OIL_RED:
+                draw_text("OIL HOT", font_label, COL_RED, 240, 560)
+
+        elif page == 2:
+            left_x = 36
+            right_x = 990
+            y = 26
+            row_gap = 58
+
+            for label, key in rows:
+                draw_text(label, font_label, (230, 230, 230), left_x, y)
+                draw_text(vars_[key], font_value, (245, 245, 245), right_x, y - 8, align_right=True)
+                y += row_gap
+
+            y += 8
+            draw_text(vars_["timeouts"], font_status, (200, 200, 200), left_x, y)
+            y += 26
+            draw_text(vars_["status"], font_status, (200, 200, 200), left_x, y)
+            y += 26
+            if vars_["lasterr"]:
+                draw_text(vars_["lasterr"], font_status, (140, 140, 140), left_x, y)
+
+        elif page == 3:
+            left_x = 36
+            y = 26
+            draw_text("Status", font_label, COL_DIM, left_x, y)
+            y += 34
+            draw_text(vars_["status"], font_value, COL_TEXT, left_x, y)
+            y += 52
+            draw_text(vars_["timeouts"], font_status, COL_DIM, left_x, y)
+            y += 30
+            if vars_["lasterr"]:
+                draw_text(vars_["lasterr"], font_status, (140, 140, 140), left_x, y)
+                y += 30
+            if live["resp"]:
+                hexline = " ".join(f"{b:02X}" for b in live["resp"][:32])
+                draw_text("b0..b31", font_label, COL_DIM, left_x, y + 16)
+                draw_text(hexline, font_status, COL_TEXT, left_x, y + 42)
 
         pygame.display.flip()
         clock.tick(30)

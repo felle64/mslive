@@ -11,12 +11,16 @@ def temp_075(raw: int) -> float:
 def temp_oil(raw: int) -> float:
     return raw * 0.79607843 - 48.0
 
+def ign_deg_kw(raw: int) -> float:
+    return 72.0 - 0.375 * raw
+
 @dataclass(frozen=True)
 class Ms42General:
     rpm: int
     coolant_c: float
     oil_c: float
     iat_c: float
+    ign_deg_kw: float
     thr1_raw: int
     thr2_raw: int
     load_raw: int
@@ -31,11 +35,13 @@ def decode_general(resp: bytes) -> Ms42General:
       coolant   = b11 (0.75x - 48)
       oil       = b12 (0.79607843x - 48)
       iat       = b22 (0.75x - 48)
+      ign_deg_kw = 72 - 0.375 * b14
     """
     rpm = u16be(resp, 3)
     coolant = temp_075(resp[11])
     oil = temp_oil(resp[12])
     iat = temp_075(resp[22])
+    ign = ign_deg_kw(resp[14])
     thr1 = resp[6]
     thr2 = resp[7]
     load_raw = resp[19]
@@ -46,6 +52,7 @@ def decode_general(resp: bytes) -> Ms42General:
         coolant_c=coolant,
         oil_c=oil,
         iat_c=iat,
+        ign_deg_kw=ign,
         thr1_raw=thr1,
         thr2_raw=thr2,
         load_raw=load_raw,
