@@ -12,16 +12,18 @@ from mslive.util.cli import add_common_args, add_port_or_replay, open_ds2_or_exi
 
 REQ_GENERAL = bytes.fromhex("12 05 0B 03")
 
-COOL_YELLOW = 100.0
-COOL_RED = 105.0
+COOL_YELLOW = 105.0
+COOL_RED = 110.0
 OIL_YELLOW = 120.0
-OIL_RED = 130.0
+OIL_RED = 125.0
 
 COL_BG = (18, 18, 20)
 COL_TEXT = (245, 245, 245)
 COL_DIM = (170, 170, 170)
 COL_YELLOW = (255, 210, 70)
 COL_RED = (255, 80, 80)
+COL_TILE_BG = (26, 26, 30)
+COL_TILE_BORDER = (40, 40, 46)
 
 
 def u16be(resp: bytes, i: int) -> int:
@@ -33,6 +35,13 @@ def temp_color(value_c: float, yellow: float, red: float) -> tuple[int, int, int
     if value_c >= yellow:
         return COL_YELLOW
     return COL_TEXT
+
+def temp_bg_color(value_c: float, yellow: float, red: float) -> tuple[int, int, int]:
+    if value_c >= red:
+        return COL_RED
+    if value_c >= yellow:
+        return COL_YELLOW
+    return COL_TILE_BG
 
 
 class EMA:
@@ -232,15 +241,45 @@ def main():
             rect.topleft = (x, y)
         screen.blit(surf, rect)
 
+    def draw_text_center(text: str, font: pygame.font.Font, color: tuple[int, int, int], x: int, y: int):
+        surf = font.render(text, True, color)
+        rect = surf.get_rect()
+        rect.center = (x, y)
+        screen.blit(surf, rect)
+
     def draw_tile(title: str, value: str, x: int, y: int, w: int, h: int,
-                  value_color: tuple[int, int, int] = COL_TEXT):
-        pygame.draw.rect(screen, (26, 26, 30), (x, y, w, h), border_radius=16)
-        pygame.draw.rect(screen, (40, 40, 46), (x, y, w, h), width=2, border_radius=16)
+                  value_color: tuple[int, int, int] = COL_TEXT,
+                  bg_color: tuple[int, int, int] = COL_TILE_BG):
+        pygame.draw.rect(screen, bg_color, (x, y, w, h), border_radius=16)
+        pygame.draw.rect(screen, COL_TILE_BORDER, (x, y, w, h), width=2, border_radius=16)
         draw_text(title, font_label, COL_DIM, x + 18, y + 14)
         draw_text(value, font_value, value_color, x + w - 18, y + 56, align_right=True)
 
+    def nav_button_rects() -> tuple[pygame.Rect, pygame.Rect]:
+        w = screen.get_width()
+        pad = 16
+        btn_w = 120
+        btn_h = 32
+        y = 8
+        prev_rect = pygame.Rect(pad, y, btn_w, btn_h)
+        next_rect = pygame.Rect(w - pad - btn_w, y, btn_w, btn_h)
+        return prev_rect, next_rect
+
+    def draw_nav_buttons(page_now: int, prev_rect: pygame.Rect, next_rect: pygame.Rect):
+        pygame.draw.rect(screen, (28, 28, 32), prev_rect, border_radius=10)
+        pygame.draw.rect(screen, (50, 50, 56), prev_rect, width=2, border_radius=10)
+        draw_text_center("Prev", font_status, COL_TEXT, prev_rect.centerx, prev_rect.centery)
+
+        pygame.draw.rect(screen, (28, 28, 32), next_rect, border_radius=10)
+        pygame.draw.rect(screen, (50, 50, 56), next_rect, width=2, border_radius=10)
+        draw_text_center("Next", font_status, COL_TEXT, next_rect.centerx, next_rect.centery)
+
+        w = screen.get_width()
+        draw_text_center(f"Page {page_now}/3", font_status, COL_DIM, w // 2, 24)
+
     running = True
     while running:
+        prev_btn, next_btn = nav_button_rects()
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
@@ -255,6 +294,11 @@ def main():
                     page = 3
                 elif event.key in (pygame.K_SPACE, pygame.K_TAB):
                     page = 1 if page == 3 else page + 1
+            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                if prev_btn.collidepoint(event.pos):
+                    page = 3 if page == 1 else page - 1
+                elif next_btn.collidepoint(event.pos):
+                    page = 1 if page == 3 else page + 1
 
         now = time.time()
         if now >= next_t:
@@ -263,27 +307,36 @@ def main():
         screen.fill(COL_BG)
 
         if page == 1:
+            top_bar_h = 52
             pad = 24
-            tile_w = (1024 - pad * 3) // 2
+            screen_w = screen.get_width()
+            screen_h = screen.get_height()
+            tile_w = (screen_w - pad * 3) // 2
             tile_h = 200
             x1 = pad
             x2 = pad * 2 + tile_w
-            y1 = pad
-            y2 = pad * 2 + tile_h
+            y1 = top_bar_h + pad
+            y2 = y1 + pad + tile_h
 
             cool_col = COL_TEXT
             oil_col = COL_TEXT
+            cool_bg = COL_TILE_BG
+            oil_bg = COL_TILE_BG
             if live["cool"] is not None:
-                cool_col = temp_color(live["cool"], COOL_YELLOW, COOL_RED)
+                cool_bg = temp_bg_color(live["cool"], COOL_YELLOW, COOL_RED)
             if live["oil"] is not None:
-                oil_col = temp_color(live["oil"], OIL_YELLOW, OIL_RED)
+                oil_bg = temp_bg_color(live["oil"], OIL_YELLOW, OIL_RED)
+            if cool_bg != COL_TILE_BG:
+                cool_col = COL_BG
+            if oil_bg != COL_TILE_BG:
+                oil_col = COL_BG
 
-            draw_tile("Coolant °C", vars_["cool"], x1, y1, tile_w, tile_h, cool_col)
-            draw_tile("Oil °C",     vars_["oil"],  x2, y1, tile_w, tile_h, oil_col)
+            draw_tile("Coolant °C", vars_["cool"], x1, y1, tile_w, tile_h, cool_col, cool_bg)
+            draw_tile("Oil °C",     vars_["oil"],  x2, y1, tile_w, tile_h, oil_col, oil_bg)
             draw_tile("Battery V",  vars_["vbatt"], x1, y2, tile_w, tile_h, COL_TEXT)
             draw_tile("IAT °C",     vars_["iat"],  x2, y2, tile_w, tile_h, COL_TEXT)
 
-            footer_y = 24 + tile_h * 2 + pad * 2
+            footer_y = y2 + tile_h + pad
             draw_text(
                 f"RPM {vars_['rpm']}   Ign {vars_['ign']}°   {vars_['timeouts']}   {vars_['status']}",
                 font_status,
@@ -292,15 +345,16 @@ def main():
                 footer_y,
             )
 
+            banner_y = screen_h - 40
             if live["cool"] is not None and live["cool"] >= COOL_RED:
-                draw_text("COOLANT HOT", font_label, COL_RED, 24, 560)
+                draw_text("COOLANT HOT", font_label, COL_RED, 24, banner_y)
             if live["oil"] is not None and live["oil"] >= OIL_RED:
-                draw_text("OIL HOT", font_label, COL_RED, 240, 560)
+                draw_text("OIL HOT", font_label, COL_RED, 240, banner_y)
 
         elif page == 2:
             left_x = 36
-            right_x = 990
-            y = 26
+            right_x = screen.get_width() - 34
+            y = 60
             row_gap = 58
 
             for label, key in rows:
@@ -318,7 +372,7 @@ def main():
 
         elif page == 3:
             left_x = 36
-            y = 26
+            y = 60
             draw_text("Status", font_label, COL_DIM, left_x, y)
             y += 34
             draw_text(vars_["status"], font_value, COL_TEXT, left_x, y)
@@ -332,6 +386,8 @@ def main():
                 hexline = " ".join(f"{b:02X}" for b in live["resp"][:32])
                 draw_text("b0..b31", font_label, COL_DIM, left_x, y + 16)
                 draw_text(hexline, font_status, COL_TEXT, left_x, y + 42)
+
+        draw_nav_buttons(page, prev_btn, next_btn)
 
         pygame.display.flip()
         clock.tick(30)
