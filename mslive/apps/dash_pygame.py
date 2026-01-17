@@ -16,6 +16,7 @@ COOL_YELLOW = 105.0
 COOL_RED = 110.0
 OIL_YELLOW = 120.0
 OIL_RED = 125.0
+BATT_LOW = 11.4
 
 COL_BG = (18, 18, 20)
 COL_TEXT = (245, 245, 245)
@@ -252,13 +253,14 @@ def main():
     def draw_tile(title: str, value: str, x: int, y: int, w: int, h: int,
                   value_color: tuple[int, int, int] = COL_TEXT,
                   bg_color: tuple[int, int, int] = COL_TILE_BG,
-                  overlay_text: str | None = None):
+                  overlay_text: str | None = None,
+                  overlay_color: tuple[int, int, int] | None = None):
         pygame.draw.rect(screen, bg_color, (x, y, w, h), border_radius=16)
         pygame.draw.rect(screen, COL_TILE_BORDER, (x, y, w, h), width=2, border_radius=16)
         draw_text(title, font_label, COL_DIM, x + 18, y + 14)
         draw_text(value, font_value, value_color, x + w - 18, y + 56, align_right=True)
         if overlay_text:
-            draw_text_center(overlay_text, font_value, COL_BG, x + w // 2, y + h // 2)
+            draw_text_center(overlay_text, font_value, overlay_color or COL_BG, x + w // 2, y + h // 2)
 
     def nav_button_rects() -> tuple[pygame.Rect, pygame.Rect]:
         w = screen.get_width()
@@ -333,6 +335,7 @@ def main():
                 oil_bg = temp_bg_color(live["oil"], OIL_YELLOW, OIL_RED)
             hot_cool = live["cool"] is not None and live["cool"] >= COOL_RED
             hot_oil = live["oil"] is not None and live["oil"] >= OIL_RED
+            low_batt = live["vbatt"] is not None and live["vbatt"] <= BATT_LOW
             if cool_bg != COL_TILE_BG:
                 cool_col = COL_BG
             if oil_bg != COL_TILE_BG:
@@ -349,6 +352,7 @@ def main():
                 oil_col,
                 oil_bg,
                 "HOT" if hot_oil and flash_hot else None,
+                COL_BG,
             )
             draw_tile(
                 "Coolant °C",
@@ -360,8 +364,20 @@ def main():
                 cool_col,
                 cool_bg,
                 "HOT" if hot_cool and flash_hot else None,
+                COL_BG,
             )
-            draw_tile("Battery V",  vars_["vbatt"], x1, y2, tile_w, tile_h, COL_TEXT)
+            draw_tile(
+                "Battery V",
+                vars_["vbatt"],
+                x1,
+                y2,
+                tile_w,
+                tile_h,
+                COL_TEXT,
+                COL_TILE_BG,
+                "LOW" if low_batt else None,
+                COL_YELLOW,
+            )
             draw_tile("IAT °C",     vars_["iat"],  x2, y2, tile_w, tile_h, COL_TEXT)
 
             footer_y = y2 + tile_h + pad
