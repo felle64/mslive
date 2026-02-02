@@ -270,10 +270,12 @@ def main():
 
     def nav_button_rects() -> tuple[pygame.Rect, pygame.Rect]:
         w = screen.get_width()
+        h = screen.get_height()
         pad = 16
         btn_w = 120
         btn_h = 32
-        y = 8
+        # place buttons at the bottom
+        y = h - pad - btn_h
         prev_rect = pygame.Rect(pad, y, btn_w, btn_h)
         next_rect = pygame.Rect(w - pad - btn_w, y, btn_w, btn_h)
         return prev_rect, next_rect
@@ -288,7 +290,8 @@ def main():
         draw_text_center("Next", font_status, COL_TEXT, next_rect.centerx, next_rect.centery)
 
         w = screen.get_width()
-        draw_text_center(f"Page {page_now}/3", font_status, COL_DIM, w // 2, 24)
+        # center page number vertically with the buttons (bottom)
+        draw_text_center(f"Page {page_now}/3", font_status, COL_DIM, w // 2, prev_rect.centery)
 
     running = True
     while running:
@@ -407,7 +410,7 @@ def main():
             y_right += sec_h + gap
             draw_tile("Ign °KW", vars_["ign"], right_x, y_right, right_w, sec_h, COL_TEXT)
 
-            footer_y = screen_h - 48
+            footer_y = prev_btn.top - 12
             draw_text(
                 f"{vars_['timeouts']}   {vars_['status']}",
                 font_status,
