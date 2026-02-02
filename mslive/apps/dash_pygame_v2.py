@@ -414,7 +414,9 @@ def main():
             y_right += sec_h + gap
             draw_tile("Ign °KW", vars_["ign"], right_x, y_right, right_w, sec_h, COL_TEXT)
 
-            footer_y = prev_btn.top - 12
+            # position footer right under the Oil tile, but clamp so it never overlaps the nav buttons
+            footer_y = y + 12
+            footer_y = min(footer_y, prev_btn.top - 12)
             draw_text(
                 f"{vars_['timeouts']}   {vars_['status']}",
                 font_status,
