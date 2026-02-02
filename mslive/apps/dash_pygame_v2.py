@@ -427,7 +427,7 @@ def main():
             left_x = 36
             right_x = screen.get_width() - 34
             screen_h = screen.get_height()
-            top_bar_h = 52
+            top_bar_h = 8
             footer_block = 96
             y = top_bar_h + 8
             rows_area = max(100, screen_h - top_bar_h - footer_block)
@@ -438,13 +438,12 @@ def main():
                 draw_text(vars_[key], font_value, (245, 245, 245), right_x, y - 8, align_right=True)
                 y += row_gap
 
-            y = top_bar_h + rows_area + 12
-            draw_text(vars_["timeouts"], font_status, (200, 200, 200), left_x, y)
-            y += 26
-            draw_text(vars_["status"], font_status, (200, 200, 200), left_x, y)
-            y += 26
+            # place timeouts/status above the bottom nav buttons (moved up ~8mm)
+            footer_y = prev_btn.top - 42
+            draw_text(vars_["timeouts"], font_status, (200, 200, 200), left_x, footer_y)
+            draw_text(vars_["status"], font_status, (200, 200, 200), left_x, footer_y + 26)
             if vars_["lasterr"]:
-                draw_text(vars_["lasterr"], font_status, (140, 140, 140), left_x, y)
+                draw_text(vars_["lasterr"], font_status, (140, 140, 140), left_x, footer_y + 52)
 
         elif page == 3:
             left_x = 36
