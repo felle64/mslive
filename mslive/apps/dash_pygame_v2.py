@@ -355,20 +355,9 @@ def main():
                 oil_col = COL_BG
             flash_hot = int(time.time() * 4) % 2 == 0
 
-            # avoid overlapping with bottom nav/footer: compute content_bottom and shift up if needed
-            content_bottom = prev_btn.top - 12
-            start_y = top_bar_h + pad
-
-            left_bottom = start_y + rpm_h + gap + temp_h + gap + temp_h
-            right_bottom = start_y + 10 + sec_h + gap + sec_h + gap + sec_h
-            max_bottom = max(left_bottom, right_bottom)
-            extra_shift = 0
-            if max_bottom > content_bottom - 8:
-                extra_shift = max_bottom - (content_bottom - 8)
-                # never shift beyond the top_bar
-                extra_shift = min(extra_shift, start_y - 8)
-
-            y = start_y - extra_shift
+            # move Page 1 content to the top area to prevent any overlap with bottom nav/footer
+            start_y = top_bar_h + 8
+            y = start_y
 
             pygame.draw.rect(screen, COL_TILE_BG, (left_x, y, left_w, rpm_h), border_radius=16)
             pygame.draw.rect(screen, COL_TILE_BORDER, (left_x, y, left_w, rpm_h), width=2, border_radius=16)
@@ -406,7 +395,7 @@ def main():
                 title_color=COL_BG if oil_bg != COL_TILE_BG else COL_DIM,
             )
 
-            y_right = top_bar_h + pad + 10 - extra_shift
+            y_right = top_bar_h + 8 + 10
             draw_tile(
                 "Battery V",
                 vars_["vbatt"],
