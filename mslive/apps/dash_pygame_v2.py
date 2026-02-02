@@ -323,7 +323,8 @@ def main():
         screen.fill(COL_BG)
 
         if page == 1:
-            top_bar_h = 52
+            # shrink the top bar to place content as close to the top as possible
+            top_bar_h = 8
             pad = 24
             screen_w = screen.get_width()
             screen_h = screen.get_height()
@@ -355,8 +356,8 @@ def main():
                 oil_col = COL_BG
             flash_hot = int(time.time() * 4) % 2 == 0
 
-            # move Page 1 content to the top area to prevent any overlap with bottom nav/footer
-            start_y = top_bar_h + 8
+            # move Page 1 content to the top edge (minimal spacing)
+            start_y = 4
             y = start_y
 
             pygame.draw.rect(screen, COL_TILE_BG, (left_x, y, left_w, rpm_h), border_radius=16)
